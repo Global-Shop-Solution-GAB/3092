@@ -1,0 +1,349 @@
+Program.Sub.ScreenSU.Start
+gui.Client..create
+gui.Client..caption("Paychex")
+gui.Client..size(1740,2790)
+gui.Client..position(0,0)
+gui.Client..event(unload,unload)
+gui.Client..alwaysontop(True)
+gui.Client..fontname("arial")
+gui.Client..fontsize(8)
+gui.Client..forecolor(0)
+gui.Client..fontstyle(False,False,False,False,False)
+gui.Client..BackColor(-2147483633)
+gui.Client..controlbox(True)
+gui.Client..maxbutton(True)
+gui.Client..minbutton(True)
+gui.Client..mousepointer(0)
+gui.Client..moveable(True)
+gui.Client..sizeable(True)
+gui.Client..ShowInTaskBar(True)
+gui.Client..titlebar(True)
+gui.Client.txt1.create(textbox,"",True,1215,315,0,200,400,True,0,arial,8,-2147483643,1)
+gui.Client.txt1.maxLength(3)
+gui.Client.lbl1.create(label,"Client Number",True,1095,255,1,200,200,True,0,arial,8,-2147483633,0)
+gui.Client.cmdExport.create(button)
+gui.Client.cmdExport.caption("OK")
+gui.Client.cmdExport.visible(True)
+gui.Client.cmdExport.size(975,375)
+gui.Client.cmdExport.zorder(0)
+gui.Client.cmdExport.position(300,1700)
+gui.Client.cmdExport.enabled(True)
+gui.Client.cmdExport.fontname("arial")
+gui.Client.cmdExport.fontsize(8)
+gui.Client.cmdExport.event(click,Process)
+
+
+gui.Form2..create
+gui.Form2..caption("EvolutionPayroll_Export_0002")
+gui.Form2..size(7665,2265)
+gui.Form2..position(0,0)
+gui.Form2..alwaysontop(False)
+gui.Form2..fontname("Arial")
+gui.Form2..fontsize(8)
+gui.Form2..forecolor(0)
+gui.Form2..fontstyle(,,,,)
+gui.Form2..BackColor(-2147483633)
+gui.Form2..controlbox(True)
+gui.Form2..maxbutton(True)
+gui.Form2..minbutton(True)
+gui.Form2..mousepointer(0)
+gui.Form2..moveable(True)
+gui.Form2..sizeable(True)
+gui.Form2..ShowInTaskBar(True)
+gui.Form2..titlebar(True)
+gui.Form2.lbl1.create(label,"Creating Evolution payroll export file",True,6795,1350,1,305,200,True,2,Arial,28,-2147483633,0)
+gui.Form2.lbl1.fontstyle(True,False,False,False)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Variable.Global.DSN.Declare(String)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+'Gui.Client..Show
+
+'V-TEK
+'10-1-10
+'jct
+'Hook 15290
+F.Intrinsic.Control.CallSub(Process)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: EvolutionPayroll_export_0002_6874.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.Process.Start
+F.Intrinsic.Control.SetErrorHandler("Process_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+'Gui.Form2..Show
+
+Variable.local.export.declare(String)
+Variable.local.export.redim(0,6)
+Variable.local.hold.declare(String)
+Variable.local.query.declare(String)
+Variable.local.queryA.declare(String)
+V.Local.queryB.Declare(String)
+Variable.Local.I.declare(Long)
+Variable.local.DIR.declare(String)
+Variable.local.date.declare(String)
+Variable.local.file.declare(Long)
+Variable.local.filename.declare(String)
+Variable.local.sResult.declare(String)
+Variable.Local.time.Declare(String)
+Variable.Local.id.Declare(String)
+V.Local.shold.Declare(String)
+V.Local.sSaveDir.Declare(String)
+
+V.Local.Employee.Declare(String)
+V.Local.Name.Declare(String)
+V.Local.override.Declare(String)
+V.Local.overrideRate.Declare(String)
+V.Local.Job.Declare(String)
+V.Local.sRTHours.Declare(String)
+V.Local.fRTHours.Declare(Float)
+V.Local.fOTHours.Declare(Float)
+V.Local.sHours.Declare(String)
+V.Local.sECHours.Declare(String)
+V.Local.sType.Declare(String)
+V.Local.sEC.Declare(String)
+V.Local.filler.Declare(String)
+V.Local.fDThours.Declare(Float)
+
+V.Local.bExists.Declare(Boolean)
+
+'V.Local.shold.Set(V.Screen.Client!txt1.Text)
+'F.Intrinsic.Control.If(V.Local.shold.Trim,=,"")
+'	F.Intrinsic.UI.Msgbox("Must enter a Client Number")
+'	F.Intrinsic.Control.ExitSub
+'F.Intrinsic.Control.EndIf
+
+'modified
+
+F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Payroll",V.Local.sSaveDir)
+	F.Intrinsic.File.DirExists(V.Local.sSaveDir,V.Local.bExists)
+		F.Intrinsic.Control.If(V.Local.bExists,=,False)
+			F.Intrinsic.File.CreateDir(V.Local.sSaveDir)
+		F.Intrinsic.Control.EndIf
+
+Function.Odbc.Connection!Conx.Openconnection(Variable.Ambient.pDSN,Variable.Ambient.PUser,Variable.Ambient.PPass)
+
+
+'F.Intrinsic.Control.If(V.Caller.Hook,<,1000000)
+
+
+Function.Intrinsic.String.Left(Variable.Passed.888888,8,Variable.Local.date)
+Function.Intrinsic.String.Mid(Variable.Passed.888888,9,6,Variable.Local.time)
+Function.Intrinsic.String.Mid(Variable.Passed.888888,15,2,Variable.Local.id)
+'
+'F.Intrinsic.Control.Else
+'
+'V.Local.date.Set(20151106)
+'V.Local.time.Set(144208)
+'V.Local.id.Set(99998)
+'
+'F.Intrinsic.Control.EndIf
+'Function.Intrinsic.string.Left(Variable.Screen.Client!txt1.Text,3,Variable.Local.hold)
+'Function.Intrinsic.Control.If(Variable.Local.hold.Length,<,3)
+'	Function.intrinsic.string.concat(Variable.Local.hold,"_",Variable.Local.hold)
+'Function.Intrinsic.Control.EndIf
+Function.Intrinsic.File.Gethandle(Variable.Local.File)
+Function.Intrinsic.String.Concat(V.Local.sSaveDir,"\E",V.Caller.CompanyCode,"_TA.txt",Variable.Local.Filename)
+Function.Intrinsic.File.Openforwrite(Variable.Local.Filename,Variable.Local.File)
+
+F.Intrinsic.String.Concat("select distinct EMPLOYEE from PYRL_LABOR_XFER where RUN_CYMD = '",Variable.Local.date,"' and RUN_TIME = '",Variable.Local.time,"'",Variable.Local.queryA)
+F.ODBC.Connection!Conx.OpenRecordsetRO("rstA",V.Local.queryA)
+	F.Intrinsic.Control.DoUntil(V.ODBC.Conx!rstA.EOF,=,True)
+
+		Function.intrinsic.string.concat("select EMPLOYEE,NAME,SHIFT,TYPE,DESCR,HOURS from PYRL_LABOR_XFER where EMPLOYEE='",V.ODBC.Conx!rstA.FieldValTrim!EMPLOYEE,"' and RUN_CYMD = '",Variable.Local.date,"' and RUN_TIME = '",Variable.Local.time,"'",Variable.Local.query)
+		Function.Odbc.Connection!Conx.Openrecordsetro("rstX",Variable.Local.query)
+			Function.Intrinsic.Control.dountil(Variable.Odbc.Conx!Rstx.Eof,=,True)
+					Variable.local.export.redim(0,17)
+
+				Variable.local.Employee.set(Variable.Odbc.Conx!Rstx.Fieldval!EMPLOYEE)
+				F.Intrinsic.String.LPad(V.Local.Employee," ",6,V.Local.Employee)
+					Variable.local.export(0).set(V.Local.Employee)
+
+				V.Local.Name.Set(V.ODBC.Conx!rstX.FieldVal!NAME)
+				F.Intrinsic.String.Left(V.Local.Name,25,V.Local.Name)
+				F.Intrinsic.String.RPad(V.Local.Name," ",25,V.Local.Name)
+					V.Local.export(1).Set(V.Local.name)
+
+				F.Intrinsic.String.RPad(V.Local.override," ",6,V.Local.override)
+					V.Local.export(2).Set(V.Local.override)
+
+				F.Intrinsic.String.RPad(V.Local.Job," ",12,V.Local.Job)
+					V.Local.export(3).Set(V.Local.Job)
+
+					V.Local.export(4).Set(V.ODBC.Conx!rstX.FieldVal!SHIFT)
+
+					V.Local.export(5).Set("E")
+
+				F.Intrinsic.String.RPad(V.Local.overrideRate," ",9,V.Local.overrideRate)
+					V.Local.export(7).Set(V.Local.overrideRate)
+
+'-------------------------------------Earn Type----------------------------------------------------------------------------------
+				V.Local.sType.Set(V.ODBC.Conx!rstX.FieldVal!TYPE)
+
+					F.Intrinsic.Control.If(V.Local.sType,=,"RT")
+
+						V.Local.fRTHours.Set(Variable.Odbc.Conx!Rstx.Fieldval!HOURS)
+							V.Local.sEC.Set(" 2")
+
+					Function.intrinsic.string.concat("select HOURS from PYRL_LABOR_XFER where EMPLOYEE='",V.ODBC.Conx!rstA.FieldValTrim!EMPLOYEE,"' and RUN_CYMD = '",Variable.Local.date,"' and RUN_TIME = '",Variable.Local.time,"' and TYPE='OT' ",Variable.Local.queryB)
+					Function.Odbc.Connection!Conx.Openrecordsetro("rstB",Variable.Local.queryB)
+						F.Intrinsic.Control.If(V.ODBC.Conx!rstB.EOF,=,False)
+							V.Local.fOTHours.Set(V.ODBC.Conx!rstB.FieldVal!HOURS)
+						F.Intrinsic.Control.Else
+							V.Local.fOTHours.Set(0)
+						F.Intrinsic.Control.EndIf
+					F.ODBC.Conx!rstB.Close
+
+				Function.intrinsic.string.concat("select HOURS from PYRL_LABOR_XFER where EMPLOYEE='",V.ODBC.Conx!rstA.FieldValTrim!EMPLOYEE,"' and RUN_CYMD = '",Variable.Local.date,"' and RUN_TIME = '",Variable.Local.time,"' and TYPE='DT' ",Variable.Local.queryB)
+					Function.Odbc.Connection!Conx.Openrecordsetro("rstB",Variable.Local.queryB)
+					F.Intrinsic.Control.If(V.ODBC.Conx!rstB.EOF,=,False)
+						V.Local.fDTHours.Set(V.ODBC.Conx!rstB.FieldVal!HOURS)
+					F.Intrinsic.Control.Else
+						V.Local.fDTHours.Set(0)
+						F.Intrinsic.Control.EndIf
+					F.ODBC.Conx!rstB.Close
+'						
+						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.fDTHours,V.Local.fRTHours)
+'							F.Intrinsic.String.Format(V.Local.fRTHours,"000.00",V.Local.shours)
+						
+						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.fOTHours,V.Local.fRTHours)
+							F.Intrinsic.String.Format(V.Local.fRTHours,"000.00",V.Local.shours)
+
+							V.local.export(8).set(Variable.Local.sHours)
+
+					F.Intrinsic.Control.ElseIf(V.Local.sType,=,"OT")
+						V.Local.sHours.Set(Variable.Odbc.Conx!Rstx.Fieldval!HOURS)
+						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.sHours,V.Local.fRTHours)
+							Variable.local.export(8).set(Variable.Local.sHours)
+							V.Local.sEC.Set(" 3")
+				
+					F.Intrinsic.control.ElseIf(V.Local.sType,=,"DT")
+						V.Local.sHours.Set(Variable.Odbc.Conx!Rstx.Fieldval!HOURS)
+						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.sHours,V.Local.fRTHours)
+
+						V.local.export(8).set(Variable.Local.sHours)
+						V.Local.sEC.Set(" 7")
+'					
+'						V.local.sHours.Set(V.ODBC.Conx!rstX.FieldVal!HOURS)
+'						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.sHours,V.Local.fRTHours)
+'						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.sHours,V.Local.fRTHours)
+'						V.Local.fRTHours.Set(Variable.Odbc.Conx!Rstx.Fieldval!HOURS)
+'						Function.intrinsic.string.concat("select HOURS from PYRL_LABOR_XFER where EMPLOYEE='",V.ODBC.Conx!rstA.FieldValTrim!EMPLOYEE,"' and RUN_CYMD = '",Variable.Local.date,"' and RUN_TIME = '",Variable.Local.time,"' and TYPE='DT' ",Variable.Local.queryB)
+'						Function.Odbc.Connection!Conx.Openrecordsetro("rstB",Variable.Local.queryB)
+'						F.Intrinsic.Control.If(V.ODBC.Conx!rstB.EOF,=,False)
+'							V.Local.fDTHours.Set(V.ODBC.Conx!rstB.FieldVal!HOURS)
+'						F.Intrinsic.Control.Else
+'							V.Local.fDTHours.Set(0)
+'						F.Intrinsic.Control.EndIf
+'						F.ODBC.Conx!rstB.Close
+'						
+'						F.Intrinsic.Math.Add(V.Local.fRTHours,V.Local.fDTHours,V.Local.fRTHours)
+'						V.Local.sHours.Set(V.ODBC.Conx!rstx.FieldVal!HOURS)
+
+'							F.Intrinsic.String.Format(V.Local.fDTHours,"000.00",V.Local.shours)
+'						F.Intrinsic.Math.Add(V.Local.sHours,V.Local.fDTHours,V.Local.sHours)
+
+'							V.local.export(8).set(Variable.Local.sHours)
+'						V.Local.sEC.Set(" 7")
+'					
+					F.Intrinsic.Control.Else
+						V.Local.sEC.Set(Variable.Odbc.Conx!Rstx.Fieldval!DESCR)
+							F.Intrinsic.String.Left(V.Local.sEC,2,V.Local.sEC)
+							F.Intrinsic.String.Trim(V.Local.sEC,V.Local.sEC)
+							F.Intrinsic.String.RPad(V.Local.sEC," ",2,V.Local.sEC)
+
+						V.Local.sHours.Set(Variable.Odbc.Conx!Rstx.Fieldval!HOURS)
+							Variable.local.export(8).set(Variable.Local.sHours)
+
+					F.Intrinsic.Control.EndIf
+
+					Variable.local.export(6).set(V.Local.sEC)
+
+				F.Intrinsic.String.RPad(V.Local.filler," ",32,V.Local.filler)
+					V.Local.export(9).Set(V.Local.filler)
+
+
+
+			Variable.local.hold.set("")
+			Function.Intrinsic.Control.For(Variable.Local.I,Variable.Local.export.Lbound,Variable.Local.export.Ubound,1)
+				Function.intrinsic.control.if(Variable.Local.I,=,0)
+					Variable.Local.hold.Set(Variable.Local.export(0))
+				Function.intrinsic.control.elseif(Variable.Local.i,<>,0)
+					Function.intrinsic.string.concat(Variable.Local.hold,Variable.Local.export(Variable.Local.I),Variable.Local.hold)
+				Function.intrinsic.control.endif
+			Function.intrinsic.control.next(Variable.Local.I)
+			Function.Intrinsic.File.Writeline(Variable.Local.File,Variable.Local.Hold)
+
+			Function.Odbc.Conx!Rstx.movenext
+			Function.intrinsic.control.loop
+		Function.Odbc.Conx!Rstx.Close
+
+
+
+	F.ODBC.Conx!rstA.MoveNext
+	F.Intrinsic.Control.Loop
+F.ODBC.Conx!rstA.Close
+
+Function.Intrinsic.File.Closefile(Variable.Local.File)
+
+
+
+Function.Odbc.Connection!Conx.Close
+Function.Intrinsic.Control.End
+
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Process_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: EvolutionPayroll_export_0002_6874.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Process.End
+
+Program.Sub.unload.Start
+F.Intrinsic.Control.SetErrorHandler("unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+Function.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: EvolutionPayroll_export_0002_6874.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.unload.End
+
+
